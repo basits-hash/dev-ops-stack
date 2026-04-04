@@ -1,303 +1,183 @@
-# DevOps Task Manager - Full Stack Application
+# DevOps Task Manager — Python + Azure DevOps
 
-A production-ready Task Management application demonstrating modern DevOps practices, CI/CD pipelines, containerization, orchestration, and monitoring.
+A production-ready Task Management application demonstrating modern DevOps practices on **Azure**, with a **Python FastAPI** backend, Azure DevOps CI/CD pipelines, AKS orchestration, and full observability.
 
-**🌐 Live Demo**: [https://basitsherazi.github.io/dev-ops-basit-/](https://basitsherazi.github.io/dev-ops-basit-/)
-
-![DevOps](https://img.shields.io/badge/DevOps-Enabled-blue)
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green)
+![Azure DevOps](https://img.shields.io/badge/Azure%20DevOps-Pipeline-0078D4)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-green)
-![Live](https://img.shields.io/badge/Live-GitHub%20Pages-success)
+![AKS](https://img.shields.io/badge/AKS-Kubernetes-326CE5)
+![Terraform](https://img.shields.io/badge/Terraform-Azure-7B42BC)
 
-## 🚀 Project Overview
+## Project Overview
 
-This project showcases a complete DevOps workflow for a full-stack application:
+| Layer | Technology |
+|---|---|
+| Frontend | React.js (nginx) |
+| Backend API | Python 3.12 + FastAPI + Motor (async MongoDB) |
+| Database | MongoDB 7 |
+| Containerization | Docker / Docker Compose |
+| Orchestration | Azure Kubernetes Service (AKS) |
+| CI/CD | **Azure DevOps Pipelines** |
+| Infrastructure as Code | Terraform (Azure provider) |
+| Container Registry | Azure Container Registry (ACR) |
+| Monitoring | Prometheus + Grafana |
+| Logging | Azure Monitor / Log Analytics |
 
-- **Frontend**: React.js with responsive design
-- **Backend**: Node.js/Express REST API
-- **Database**: MongoDB (containerized)
-- **Containerization**: Docker & Docker Compose
-- **Orchestration**: Kubernetes manifests
-- **CI/CD**: GitHub Actions pipelines
-- **Infrastructure as Code**: Terraform
-- **Monitoring**: Prometheus & Grafana
-- **Logging**: ELK Stack configuration
-
-## 📋 Table of Contents
-
-- [Features](#features)
-- [Architecture](#architecture)
-- [Getting Started](#getting-started)
-- [Deployment Options](#deployment-options)
-- [CI/CD Pipeline](#cicd-pipeline)
-- [Monitoring](#monitoring)
-- [Project Structure](#project-structure)
-
-## ✨ Features
-
-### Application Features
-- ✅ Create, read, update, and delete tasks
-- ✅ Mark tasks as complete/incomplete
-- ✅ Filter tasks by status
-- ✅ Responsive UI design
-- ✅ RESTful API architecture
-
-### DevOps Features
-- 🐳 Full Docker containerization
-- ☸️ Kubernetes deployment manifests
-- 🔄 Automated CI/CD with GitHub Actions
-- 📊 Prometheus metrics and Grafana dashboards
-- 📝 Centralized logging with ELK Stack
-- 🏗️ Infrastructure as Code with Terraform
-- 🧪 Automated testing (unit & integration)
-- 🔒 Security scanning and best practices
-
-## 🏗️ Architecture
+## Architecture
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   React     │────▶│   Express   │────▶│   MongoDB   │
-│  Frontend   │     │   Backend   │     │  Database   │
-└─────────────┘     └─────────────┘     └─────────────┘
-       │                    │                    │
-       └────────────────────┴────────────────────┘
-                           │
-                    Docker Containers
-                           │
-                    Kubernetes Cluster
-                           │
-              ┌────────────┴────────────┐
-              │                         │
-         Prometheus              GitHub Actions
-         Grafana                   CI/CD
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
+│  React Frontend │────▶│  FastAPI Backend  │────▶│   MongoDB   │
+│   (nginx:80)    │     │  (uvicorn:8000)   │     │             │
+└─────────────────┘     └──────────────────┘     └─────────────┘
+         │                        │
+         └──────── AKS Cluster ───┘
+                        │
+          ┌─────────────┴─────────────┐
+          │                           │
+   Azure DevOps               Azure Container
+     Pipelines                  Registry (ACR)
+          │
+   ┌──────┴──────┐
+   │  Terraform  │
+   │  (Azure)    │
+   └─────────────┘
 ```
 
-## 🚀 Getting Started
+## CI/CD Pipeline (Azure DevOps)
 
-### 🌐 Try it Live!
+`azure-pipelines.yml` defines 4 stages:
 
-**No installation needed!** Visit the live demo:
-👉 **[https://basitsherazi.github.io/dev-ops-basit-/](https://basitsherazi.github.io/dev-ops-basit-/)**
+| Stage | Trigger | What happens |
+|---|---|---|
+| **Test** | every push / PR | pytest + flake8 for Python backend; Jest + build for frontend |
+| **Security Scan** | after Test | `safety` dependency audit + Trivy filesystem scan |
+| **Build** | `main` branch only | Builds & pushes Docker images to ACR (tagged with `BuildId` + `latest`) |
+| **Deploy Dev** | after Build | Deploys to AKS `task-manager` namespace via `KubernetesManifest` task |
+| **Deploy Prod** | after Dev | Deploys to AKS `task-manager-prod` namespace — **requires manual approval gate** |
 
-The live demo runs in **Demo Mode** with data saved in your browser - fully functional without a backend!
+### Azure DevOps Setup
 
-### 📋 Quick Deploy to GitHub Pages
+1. Create a new Azure DevOps project and import this repo.
+2. Create a **Service Connection** named `AzureServiceConnection` (Azure Resource Manager, subscription scope).
+3. Create a **Service Connection** named `AzureContainerRegistry` (Docker Registry → ACR).
+4. Add an **approval gate** on the `production` environment in Azure DevOps Environments.
+5. Create the pipeline from `azure-pipelines.yml`.
 
-Want your own live version? Just 3 steps:
+## Quick Start (Docker Compose)
 
-```bash
-# 1. Push to GitHub
-git add .
-git commit -m "Deploy to GitHub Pages"
-git push origin main
-
-# 2. Enable GitHub Pages in repository Settings → Pages
-# 3. Wait 2-3 minutes - your site is live!
-```
-
-See [GITHUB_PAGES_DEPLOY.md](GITHUB_PAGES_DEPLOY.md) for detailed instructions.
-
-### Prerequisites
-
-- Docker & Docker Compose
-- Node.js (v18+)
-- npm or yarn
-- kubectl (for Kubernetes)
-- Terraform (optional, for IaC)
-
-### Quick Start with Docker Compose
-
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd dev-ops-basit-
-   ```
-
-2. **Start all services**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
-   - MongoDB: localhost:27017
-
-4. **Stop services**
-   ```bash
-   docker-compose down
-   ```
-
-### Local Development Setup
-
-#### Backend Setup
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-#### Frontend Setup
-```bash
-cd frontend
-npm install
-npm start
-```
-
-## 🚢 Deployment Options
-
-### 1. Docker Compose (Development)
 ```bash
 docker-compose up -d
 ```
 
-### 2. Kubernetes (Production)
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8000 |
+| API Docs (Swagger) | http://localhost:8000/docs |
+| Metrics | http://localhost:8000/metrics |
+| Health | http://localhost:8000/health |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3001 (admin/admin) |
+
+## Local Backend Development
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+
+# Run tests
+pytest -v
+
+# Start dev server (auto-reload)
+uvicorn main:app --reload --port 8000
+```
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | Health check + MongoDB status |
+| GET | `/metrics` | Prometheus metrics |
+| GET | `/api/tasks` | List all tasks |
+| POST | `/api/tasks` | Create task `{"title": "..."}` |
+| PUT | `/api/tasks/{id}` | Update task `{"completed": true}` |
+| DELETE | `/api/tasks/{id}` | Delete task |
+
+Interactive docs at `GET /docs` (Swagger UI) and `GET /redoc`.
+
+## Kubernetes (AKS)
+
 ```bash
 # Apply all manifests
 kubectl apply -f k8s/
 
-# Check deployment status
-kubectl get pods
-kubectl get services
+# Check status
+kubectl get pods -n task-manager
+kubectl get svc -n task-manager
 ```
 
-### 3. Cloud Deployment with Terraform
+## Infrastructure (Terraform → Azure)
+
 ```bash
 cd terraform
-terraform init
+terraform init        # pulls azurerm provider, configures Azure Blob backend
 terraform plan
-terraform apply
+terraform apply       # provisions RG, ACR, VNet, AKS, Log Analytics
 ```
 
-## 🔄 CI/CD Pipeline
+### Resources created
 
-The project includes GitHub Actions workflows for:
+- Resource Group
+- Azure Container Registry (Standard SKU)
+- Virtual Network + AKS subnet
+- AKS cluster (SystemAssigned identity, Azure CNI)
+- ACR pull role assignment for AKS kubelet
+- Log Analytics Workspace
 
-1. **Build & Test** (`.github/workflows/ci.yml`)
-   - Runs on every push and PR
-   - Executes unit and integration tests
-   - Builds Docker images
-   - Performs security scans
-
-2. **Deploy** (`.github/workflows/deploy.yml`)
-   - Triggers on main branch merge
-   - Builds and pushes Docker images
-   - Deploys to Kubernetes
-   - Runs smoke tests
-
-3. **Infrastructure** (`.github/workflows/terraform.yml`)
-   - Validates Terraform configurations
-   - Plans infrastructure changes
-   - Applies changes on approval
-
-## 📊 Monitoring
-
-### Prometheus Metrics
-- Application health checks
-- Request rate and latency
-- Error rates
-- Custom business metrics
-
-Access Prometheus: `http://localhost:9090`
-
-### Grafana Dashboards
-- Pre-configured dashboards for application monitoring
-- System resource monitoring
-- Custom alerts
-
-Access Grafana: `http://localhost:3001`
-- Username: `admin`
-- Password: `admin`
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 dev-ops-basit-/
-├── frontend/                 # React application
-│   ├── src/
-│   ├── public/
+├── azure-pipelines.yml       # Azure DevOps CI/CD pipeline
+├── docker-compose.yml        # Local dev stack
+├── backend/                  # Python FastAPI service
+│   ├── main.py               # App: routes, models, metrics
+│   ├── requirements.txt      # Production deps
+│   ├── requirements-dev.txt  # Test deps
+│   ├── pytest.ini
 │   ├── Dockerfile
-│   └── package.json
-├── backend/                  # Express API
-│   ├── src/
-│   ├── tests/
-│   ├── Dockerfile
-│   └── package.json
-├── k8s/                      # Kubernetes manifests
-│   ├── frontend-deployment.yaml
+│   └── tests/
+│       └── test_main.py
+├── frontend/                 # React + nginx
+├── k8s/                      # Kubernetes manifests (AKS)
+│   ├── namespace.yaml
 │   ├── backend-deployment.yaml
+│   ├── frontend-deployment.yaml
 │   ├── mongodb-deployment.yaml
-│   └── ingress.yaml
-├── terraform/                # Infrastructure as Code
-│   ├── main.tf
+│   ├── ingress.yaml
+│   ├── hpa.yaml
+│   └── secrets.yaml
+├── terraform/                # Azure IaC
+│   ├── main.tf               # ACR, AKS, VNet, Log Analytics
 │   ├── variables.tf
 │   └── outputs.tf
-├── monitoring/               # Monitoring configuration
-│   ├── prometheus/
-│   └── grafana/
-├── .github/
-│   └── workflows/           # CI/CD pipelines
-├── docker-compose.yml
-└── README.md
+└── monitoring/               # Prometheus + Grafana config
 ```
 
-## 🧪 Testing
+## Security
 
-### Run Backend Tests
-```bash
-cd backend
-npm test
-npm run test:integration
-```
+- Non-root user in Docker images
+- ACR pull access via managed identity (no passwords)
+- Kubernetes Secrets for MongoDB credentials
+- Trivy + `safety` scans on every pipeline run
+- FastAPI input validation via Pydantic
 
-### Run Frontend Tests
-```bash
-cd frontend
-npm test
-```
+## Author
 
-### Run E2E Tests
-```bash
-npm run test:e2e
-```
-
-## 🔒 Security
-
-- Docker image scanning with Trivy
-- Dependency vulnerability scanning
-- Secret management with Kubernetes secrets
-- HTTPS/TLS configuration
-- Security headers implementation
-
-## 📚 Documentation
-
-- [Architecture Design](docs/architecture.md)
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Monitoring Guide](docs/monitoring.md)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Basit Sherazi**
-- GitHub: [@basitsherazi](https://github.com/basitsherazi)
-
-## 🙏 Acknowledgments
-
-This project demonstrates production-ready DevOps practices suitable for enterprise applications.
+**Basit Sherazi** — [@BasitS-hash](https://github.com/BasitS-hash)
 
 ---
 
-**Made with ❤️ for IT Majors and DevOps Enthusiasts**
+*Built to demonstrate Azure DevOps + Python DevOps practices.*

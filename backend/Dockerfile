@@ -1,37 +1,33 @@
-# Multi-stage build for Node.js backend
-FROM node:18-alpine as build
+# Multi-stage build for Python FastAPI backend
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN npm ci --only=production
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
 
 # Production stage
-FROM node:18-alpine
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Copy dependencies from build stage
-COPY --from=build /app/node_modules ./node_modules
+# Copy installed packages from builder
+COPY --from=builder /install /usr/local
 
-# Copy source code
-COPY . .
+# Copy source
+COPY main.py .
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN addgroup --gid 1001 appgroup && adduser --uid 1001 --gid 1001 --no-create-home --disabled-password appuser
+USER appuser
 
-USER nodejs
+EXPOSE 8000
 
-# Expose port
-EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
-
-# Start the application
-CMD ["node", "src/server.js"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

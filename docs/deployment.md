@@ -41,7 +41,7 @@ docker-compose down
 
 **Access the application:**
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
+- Backend API: http://localhost:8000
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3001
 
@@ -324,7 +324,7 @@ kubectl get events -n task-manager
 
 ```bash
 # Backend health
-curl http://localhost:5000/health
+curl http://localhost:8000/health
 
 # Kubernetes health
 kubectl get --raw /healthz

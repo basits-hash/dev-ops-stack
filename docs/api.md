@@ -3,7 +3,7 @@
 ## Base URL
 
 ```
-Local: http://localhost:5000
+Local: http://localhost:8000
 Production: https://your-domain.com
 ```
 
@@ -198,26 +198,26 @@ CORS is enabled for all origins in development. In production, configure specifi
 
 **Create a task:**
 ```bash
-curl -X POST http://localhost:5000/api/tasks \
+curl -X POST http://localhost:8000/api/tasks \
   -H "Content-Type: application/json" \
   -d '{"title":"Learn Kubernetes"}'
 ```
 
 **Get all tasks:**
 ```bash
-curl http://localhost:5000/api/tasks
+curl http://localhost:8000/api/tasks
 ```
 
 **Update a task:**
 ```bash
-curl -X PUT http://localhost:5000/api/tasks/65abc123def456791 \
+curl -X PUT http://localhost:8000/api/tasks/65abc123def456791 \
   -H "Content-Type: application/json" \
   -d '{"completed":true}'
 ```
 
 **Delete a task:**
 ```bash
-curl -X DELETE http://localhost:5000/api/tasks/65abc123def456791
+curl -X DELETE http://localhost:8000/api/tasks/65abc123def456791
 ```
 
 ### Using JavaScript (Axios)
@@ -225,7 +225,7 @@ curl -X DELETE http://localhost:5000/api/tasks/65abc123def456791
 ```javascript
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:8000/api';
 
 // Create task
 const createTask = async (title) => {
@@ -257,7 +257,7 @@ const deleteTask = async (id) => {
 ```python
 import requests
 
-API_URL = 'http://localhost:5000/api'
+API_URL = 'http://localhost:8000/api'
 
 # Create task
 response = requests.post(f'{API_URL}/tasks', json={'title': 'New task'})

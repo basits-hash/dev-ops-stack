@@ -140,7 +140,7 @@ cd frontend && npm install && npm start
 
 ### Running Application
 - **Frontend**: http://localhost:3000 - Beautiful task manager UI
-- **Backend**: http://localhost:5000 - RESTful API
+- **Backend**: http://localhost:8000 - RESTful API
 - **Prometheus**: http://localhost:9090 - Metrics
 - **Grafana**: http://localhost:3001 - Dashboards (admin/admin)
 

@@ -1,208 +1,107 @@
 terraform {
-  required_version = ">= 1.0"
-  
+  required_version = ">= 1.5"
+
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.100"
     }
   }
 
-  backend "s3" {
-    bucket = "taskmanager-terraform-state"
-    key    = "terraform.tfstate"
-    region = "us-east-1"
+  # Store state in Azure Blob Storage
+  backend "azurerm" {
+    resource_group_name  = "tfstate-rg"
+    storage_account_name = "taskmanagertfstate"
+    container_name       = "tfstate"
+    key                  = "task-manager.tfstate"
   }
 }
 
-provider "aws" {
-  region = var.aws_region
+provider "azurerm" {
+  features {}
 }
 
-# VPC Configuration
-resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+# ── Resource Group ──────────────────────────────────────────────────────────
+resource "azurerm_resource_group" "main" {
+  name     = "${var.project_name}-rg"
+  location = var.azure_region
 
   tags = {
-    Name        = "${var.project_name}-vpc"
+    Project     = var.project_name
     Environment = var.environment
+    ManagedBy   = "Terraform"
   }
 }
 
-# Internet Gateway
-resource "aws_internet_gateway" "main" {
-  vpc_id = aws_vpc.main.id
+# ── Azure Container Registry ─────────────────────────────────────────────────
+resource "azurerm_container_registry" "acr" {
+  name                = "${replace(var.project_name, "-", "")}acr"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku                 = "Standard"
+  admin_enabled       = false
 
-  tags = {
-    Name        = "${var.project_name}-igw"
-    Environment = var.environment
-  }
+  tags = azurerm_resource_group.main.tags
 }
 
-# Public Subnets
-resource "aws_subnet" "public" {
-  count                   = 2
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = true
+# ── Virtual Network ──────────────────────────────────────────────────────────
+resource "azurerm_virtual_network" "main" {
+  name                = "${var.project_name}-vnet"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  address_space       = ["10.0.0.0/16"]
 
-  tags = {
-    Name        = "${var.project_name}-public-subnet-${count.index + 1}"
-    Environment = var.environment
-  }
+  tags = azurerm_resource_group.main.tags
 }
 
-# Route Table
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.main.id
-  }
-
-  tags = {
-    Name        = "${var.project_name}-public-rt"
-    Environment = var.environment
-  }
+resource "azurerm_subnet" "aks" {
+  name                 = "aks-subnet"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.0.1.0/24"]
 }
 
-resource "aws_route_table_association" "public" {
-  count          = 2
-  subnet_id      = aws_subnet.public[count.index].id
-  route_table_id = aws_route_table.public.id
+# ── AKS Cluster ──────────────────────────────────────────────────────────────
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = "${var.project_name}-aks"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  dns_prefix          = var.project_name
+
+  default_node_pool {
+    name           = "default"
+    node_count     = var.node_count
+    vm_size        = var.node_vm_size
+    vnet_subnet_id = azurerm_subnet.aks.id
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  network_profile {
+    network_plugin    = "azure"
+    load_balancer_sku = "standard"
+  }
+
+  tags = azurerm_resource_group.main.tags
 }
 
-# Security Group for ALB
-resource "aws_security_group" "alb" {
-  name        = "${var.project_name}-alb-sg"
-  description = "Security group for Application Load Balancer"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "${var.project_name}-alb-sg"
-    Environment = var.environment
-  }
+# Grant AKS pull access to ACR
+resource "azurerm_role_assignment" "aks_acr_pull" {
+  principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  role_definition_name             = "AcrPull"
+  scope                            = azurerm_container_registry.acr.id
+  skip_service_principal_aad_check = true
 }
 
-# Security Group for ECS Tasks
-resource "aws_security_group" "ecs_tasks" {
-  name        = "${var.project_name}-ecs-tasks-sg"
-  description = "Security group for ECS tasks"
-  vpc_id      = aws_vpc.main.id
+# ── Azure Monitor / Log Analytics ────────────────────────────────────────────
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "${var.project_name}-logs"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
 
-  ingress {
-    from_port       = 0
-    to_port         = 65535
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "${var.project_name}-ecs-tasks-sg"
-    Environment = var.environment
-  }
-}
-
-# ECS Cluster
-resource "aws_ecs_cluster" "main" {
-  name = "${var.project_name}-cluster"
-
-  setting {
-    name  = "containerInsights"
-    value = "enabled"
-  }
-
-  tags = {
-    Name        = "${var.project_name}-cluster"
-    Environment = var.environment
-  }
-}
-
-# Application Load Balancer
-resource "aws_lb" "main" {
-  name               = "${var.project_name}-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
-  subnets            = aws_subnet.public[*].id
-
-  tags = {
-    Name        = "${var.project_name}-alb"
-    Environment = var.environment
-  }
-}
-
-resource "aws_lb_target_group" "frontend" {
-  name        = "${var.project_name}-frontend-tg"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "ip"
-
-  health_check {
-    path                = "/"
-    healthy_threshold   = 2
-    unhealthy_threshold = 10
-    timeout             = 30
-    interval            = 60
-    matcher             = "200"
-  }
-}
-
-resource "aws_lb_listener" "frontend" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
-  }
-}
-
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
-# CloudWatch Log Group
-resource "aws_cloudwatch_log_group" "app" {
-  name              = "/ecs/${var.project_name}"
-  retention_in_days = 7
-
-  tags = {
-    Name        = "${var.project_name}-logs"
-    Environment = var.environment
-  }
+  tags = azurerm_resource_group.main.tags
 }

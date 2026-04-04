@@ -3,7 +3,7 @@ import axios from 'axios';
 import './App.css';
 
 // Use environment variable for production, fallback to localhost for development
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IS_DEMO_MODE = !process.env.REACT_APP_API_URL && window.location.hostname.includes('github.io');
 
 function App() {
@@ -234,8 +234,8 @@ function App() {
         )}
 
         <footer className="footer">
-          <p>Built with React, Node.js, Express, MongoDB</p>
-          <p>🐳 Containerized | ☸️ Kubernetes Ready | 🔄 CI/CD Enabled</p>
+          <p>Built with React, Python FastAPI, MongoDB</p>
+          <p>🐳 Containerized | ☸️ AKS Ready | 🔄 Azure DevOps CI/CD</p>
           {IS_DEMO_MODE && (
             <p className="demo-badge">
               🎯 Demo Mode - Data saved locally in browser

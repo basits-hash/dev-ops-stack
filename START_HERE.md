@@ -44,7 +44,7 @@ docker compose up -d
 
 Open your browser:
 - **Your App**: http://localhost:3000 ← **YOUR LIVE WEBSITE!**
-- **API**: http://localhost:5000/health
+- **API**: http://localhost:8000/health
 - **Metrics**: http://localhost:9090
 - **Dashboards**: http://localhost:3001 (admin/admin)
 
@@ -213,7 +213,7 @@ Before presenting/submitting:
 - [ ] Run `docker compose up -d`
 - [ ] App loads at http://localhost:3000
 - [ ] Can create/delete tasks
-- [ ] Backend responds at http://localhost:5000/health
+- [ ] Backend responds at http://localhost:8000/health
 - [ ] Prometheus shows metrics
 - [ ] Grafana shows dashboards
 - [ ] All tests pass: `./scripts/test.sh`
@@ -248,7 +248,7 @@ docker compose logs mongodb
 ### Frontend Can't Connect to Backend
 ```bash
 # Check backend health
-curl http://localhost:5000/health
+curl http://localhost:8000/health
 # Should return: {"status":"healthy",...}
 ```
 

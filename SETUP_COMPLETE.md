@@ -110,8 +110,8 @@ docker compose up -d
 
 Once running, you can access:
 - **Task Manager App**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **Health Check**: http://localhost:5000/health
+- **Backend API**: http://localhost:8000
+- **Health Check**: http://localhost:8000/health
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3001 (username: admin, password: admin)
 
@@ -263,7 +263,7 @@ If you encounter any issues:
 1. Check the documentation in the `docs/` folder
 2. Review the QUICKSTART.md guide
 3. Make sure Docker is installed and running
-4. Check that no other services are using ports 3000, 5000, 9090, or 27017
+4. Check that no other services are using ports 3000, 8000, 9090, or 27017
 
 ---
 

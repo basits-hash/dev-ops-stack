@@ -18,7 +18,7 @@ docker-compose up -d
 
 # 4. Open your browser
 # Frontend: http://localhost:3000
-# Backend: http://localhost:5000/health
+# Backend: http://localhost:8000/health
 ```
 
 That's it! The application is now running.
@@ -100,7 +100,7 @@ docker-compose logs mongodb
 ### Frontend Can't Connect to Backend
 ```bash
 # Ensure backend is running
-curl http://localhost:5000/health
+curl http://localhost:8000/health
 
 # Should return: {"status":"healthy",...}
 ```
@@ -109,8 +109,8 @@ curl http://localhost:5000/health
 
 1. **First Time Setup**: Run `./scripts/setup.sh` to install all dependencies
 2. **Fresh Start**: Run `./scripts/cleanup.sh` to remove all containers and volumes
-3. **Check Health**: Visit http://localhost:5000/health to verify backend status
-4. **View Metrics**: Visit http://localhost:5000/metrics for Prometheus metrics
+3. **Check Health**: Visit http://localhost:8000/health to verify backend status
+4. **View Metrics**: Visit http://localhost:8000/metrics for Prometheus metrics
 
 ## 🎯 Project Goals
 

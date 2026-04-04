@@ -1,35 +1,35 @@
-variable "aws_region" {
-  description = "AWS region for resources"
+variable "azure_region" {
+  description = "Azure region for all resources"
   type        = string
-  default     = "us-east-1"
+  default     = "eastus"
 }
 
 variable "project_name" {
-  description = "Project name for resource naming"
+  description = "Project name used for resource naming"
   type        = string
   default     = "task-manager"
 }
 
 variable "environment" {
-  description = "Environment (dev, staging, production)"
+  description = "Environment label (dev, staging, production)"
   type        = string
   default     = "production"
 }
 
-variable "vpc_cidr" {
-  description = "CIDR block for VPC"
+variable "node_count" {
+  description = "Number of AKS worker nodes"
+  type        = number
+  default     = 2
+}
+
+variable "node_vm_size" {
+  description = "VM size for AKS nodes"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "Standard_B2s"
 }
 
 variable "container_port" {
-  description = "Port exposed by the docker container"
+  description = "Port exposed by the FastAPI backend container"
   type        = number
-  default     = 5000
-}
-
-variable "app_count" {
-  description = "Number of docker containers to run"
-  type        = number
-  default     = 2
+  default     = 8000
 }
