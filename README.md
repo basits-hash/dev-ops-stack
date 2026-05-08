@@ -15,7 +15,7 @@ A production-ready Task Manager demonstrating modern DevOps and cloud security p
 | Database | MongoDB 7 |
 | Containerization | Docker + Docker Compose |
 | CI/CD | GitHub Actions |
-| Security Scanning | Bandit + Safety + Trivy |
+| Security Scanning | Bandit + pip-audit + Trivy |
 | Monitoring | Prometheus + Grafana |
 
 ---
@@ -26,7 +26,7 @@ A production-ready Task Manager demonstrating modern DevOps and cloud security p
 - **No hardcoded credentials** — all secrets via environment variables
 - **Non-root Docker containers** — backend runs as `appuser` (uid 1001)
 - **Bandit** — static analysis on every CI run to catch Python security issues
-- **Safety** — scans Python dependencies for known CVEs on every CI run
+- **pip-audit** — scans Python dependencies for known CVEs on every CI run
 - **Trivy** — filesystem vulnerability scan, results uploaded to GitHub Security tab
 - **Input validation** — Pydantic enforces request shapes and field constraints
 
@@ -109,17 +109,18 @@ dev-ops-basit-/
 ├── backend/
 │   ├── main.py               # FastAPI app with Prometheus metrics
 │   ├── requirements.txt
-│   ├── requirements-dev.txt  # + pytest, bandit, safety
+│   ├── requirements-dev.txt  # + pytest, bandit, pip-audit
 │   ├── Dockerfile            # Multi-stage, non-root user
 │   └── tests/
 │       └── test_main.py
 ├── frontend/
 │   ├── Dockerfile
-│   ├── nginx.conf            # Reverse proxy + security headers
+│   ├── nginx.conf            # Reverse proxy to backend
 │   └── src/
 ├── monitoring/
 │   ├── prometheus/           # Scrape config
 │   └── grafana/              # Dashboards + datasources
 ├── docker-compose.yml
+├── Makefile                  # make start / stop / test / clean
 └── .env.example
 ```

@@ -2,7 +2,6 @@
   "name": "task-manager-frontend",
   "version": "1.0.0",
   "private": true,
-  "homepage": "/dev-ops-basit-",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -32,5 +31,5 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:5000"
+  "proxy": "http://localhost:8000"
 }
