@@ -43,12 +43,12 @@ async def test_health_endpoint():
 
 @pytest.mark.asyncio
 async def test_get_tasks_empty():
-    mock_cursor = MagicMock()
-    mock_cursor.sort.return_value = mock_cursor
-    mock_cursor.__aiter__ = AsyncMock(return_value=iter([]))
+    async def empty_cursor():
+        return
+        yield
 
     mock_collection = MagicMock()
-    mock_collection.find.return_value = mock_cursor
+    mock_collection.find.return_value.sort.return_value = empty_cursor()
 
     mock_db = MagicMock()
     mock_db.tasks = mock_collection
