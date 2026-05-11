@@ -1,8 +1,8 @@
 # DevOps Task Manager
 
-**Created by Syed Basit Sherazi**
+**Built by [Basit Sherazi](https://linkedin.com/in/basitsherazi)**
 
-A production-ready Task Manager demonstrating modern DevOps and cloud security practices — Python FastAPI backend, React frontend, MongoDB, Docker, CI/CD with security scanning, and observability with Prometheus + Grafana.
+A production-grade full-stack task manager built to demonstrate real DevOps and cloud security practices end-to-end — not a tutorial project. Every component was designed, built, and shipped independently: Python FastAPI backend, React frontend, MongoDB, Docker multi-stage builds, a 3-job GitHub Actions CI/CD pipeline with automated security scanning, and a live Prometheus + Grafana observability stack tracking real-time system metrics.
 
 ---
 
@@ -17,6 +17,23 @@ A production-ready Task Manager demonstrating modern DevOps and cloud security p
 | CI/CD | GitHub Actions |
 | Security Scanning | Bandit + pip-audit + Trivy |
 | Monitoring | Prometheus + Grafana |
+
+---
+
+## Architecture
+
+5 services orchestrated via Docker Compose:
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   React     │────▶│  FastAPI    │────▶│   MongoDB   │
+│  (nginx)    │     │  Backend    │     │             │
+└─────────────┘     └──────┬──────┘     └─────────────┘
+                           │ /metrics
+                    ┌──────▼──────┐     ┌─────────────┐
+                    │ Prometheus  │────▶│   Grafana   │
+                    └─────────────┘     └─────────────┘
+```
 
 ---
 
@@ -43,7 +60,7 @@ Test → Security → Build
 | Job | What it does |
 |---|---|
 | **Test** | pytest against mocked MongoDB |
-| **Security** | Bandit + Safety + Trivy scan |
+| **Security** | Bandit static analysis + pip-audit CVE detection + Trivy filesystem scan (SARIF upload to GitHub Security tab) |
 | **Build** | Builds backend + frontend Docker images |
 
 ---
