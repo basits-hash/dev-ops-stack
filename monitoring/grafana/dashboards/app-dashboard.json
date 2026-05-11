@@ -1,50 +1,70 @@
 {
-  "dashboard": {
-    "title": "Task Manager - Application Metrics",
-    "panels": [
-      {
-        "id": 1,
-        "title": "HTTP Requests Total",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(http_requests_total[5m])",
-            "legendFormat": "{{method}} - {{route}}"
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "title": "Request Duration",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
-            "legendFormat": "95th percentile"
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "title": "Active Tasks",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "count(tasks_total)"
-          }
-        ]
-      },
-      {
-        "id": 4,
-        "title": "System CPU Usage",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(process_cpu_seconds_total[5m]) * 100",
-            "legendFormat": "CPU %"
-          }
-        ]
-      }
-    ]
-  }
+  "title": "Task Manager - Application Metrics",
+  "uid": "task-manager-app",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "HTTP Request Rate",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[5m])) by (method, endpoint)",
+          "legendFormat": "{{method}} {{endpoint}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "p95 Request Latency",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 latency"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "HTTP Error Rate (5xx)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m]))",
+          "legendFormat": "5xx errors/sec"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Total Requests",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 8, "w": 6, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(http_requests_total)",
+          "legendFormat": "Total"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Backend Up",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 8, "w": 6, "h": 8 },
+      "targets": [
+        {
+          "expr": "up{job=\"backend\"}",
+          "legendFormat": "Backend"
+        }
+      ]
+    }
+  ]
 }

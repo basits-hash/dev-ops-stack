@@ -84,7 +84,7 @@ docker-compose up --build
 | API Docs (Swagger) | http://localhost:8000/docs |
 | Metrics | http://localhost:8000/metrics |
 | Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3001 (admin/admin) |
+| Grafana | http://localhost:3002 (admin/admin) |
 | Alertmanager | http://localhost:9093 |
 
 ---
