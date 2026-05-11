@@ -16,13 +16,13 @@ A production-grade full-stack task manager built to demonstrate real DevOps and 
 | Containerization | Docker + Docker Compose |
 | CI/CD | GitHub Actions |
 | Security Scanning | Bandit + pip-audit + Trivy |
-| Monitoring | Prometheus + Grafana |
+| Monitoring | Prometheus + Grafana + Alertmanager |
 
 ---
 
 ## Architecture
 
-5 services orchestrated via Docker Compose:
+6 services orchestrated via Docker Compose:
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -32,7 +32,11 @@ A production-grade full-stack task manager built to demonstrate real DevOps and 
                            │ /metrics
                     ┌──────▼──────┐     ┌─────────────┐
                     │ Prometheus  │────▶│   Grafana   │
-                    └─────────────┘     └─────────────┘
+                    └──────┬──────┘     └─────────────┘
+                           │ alerts
+                    ┌──────▼──────┐
+                    │Alertmanager │
+                    └─────────────┘
 ```
 
 ---
@@ -46,6 +50,7 @@ A production-grade full-stack task manager built to demonstrate real DevOps and 
 - **pip-audit** — scans Python dependencies for known CVEs on every CI run
 - **Trivy** — filesystem vulnerability scan, results uploaded to GitHub Security tab
 - **Input validation** — Pydantic enforces request shapes and field constraints
+- **Alerting** — Prometheus alert rules for service downtime, high error rate, p95 latency, CPU, and memory; routed through Alertmanager with configurable Slack/email receivers
 
 ---
 
@@ -80,6 +85,7 @@ docker-compose up --build
 | Metrics | http://localhost:8000/metrics |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3001 (admin/admin) |
+| Alertmanager | http://localhost:9093 |
 
 ---
 
@@ -135,7 +141,8 @@ dev-ops-basit-/
 │   ├── nginx.conf            # Reverse proxy to backend
 │   └── src/
 ├── monitoring/
-│   ├── prometheus/           # Scrape config
+│   ├── prometheus/           # Scrape config + alert rules
+│   ├── alertmanager/         # Alert routing config
 │   └── grafana/              # Dashboards + datasources
 ├── docker-compose.yml
 ├── Makefile                  # make start / stop / test / clean
