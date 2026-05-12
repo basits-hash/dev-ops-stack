@@ -2,7 +2,7 @@
 
 **Built by [Basit Sherazi](https://linkedin.com/in/basitsherazi)**
 
-A production-grade full-stack task manager built to demonstrate real DevOps and cloud security practices end-to-end — not a tutorial project. Every component was designed, built, and shipped independently: Python FastAPI backend, React frontend, MongoDB, Docker multi-stage builds, a 3-job GitHub Actions CI/CD pipeline with automated security scanning, and a live Prometheus + Grafana observability stack tracking real-time system metrics.
+A production-grade full-stack task manager built to demonstrate real DevOps and cloud security practices end-to-end — not a tutorial project. Every component was designed, built, and shipped independently: Python FastAPI backend, React frontend, MongoDB, Docker multi-stage builds, a 3-job GitHub Actions CI/CD pipeline with automated security scanning, a live Prometheus + Grafana observability stack tracking real-time system metrics, and a backend deployed to Azure Container Apps via Azure Container Registry.
 
 ---
 
@@ -17,6 +17,7 @@ A production-grade full-stack task manager built to demonstrate real DevOps and 
 | CI/CD | GitHub Actions |
 | Security Scanning | Bandit + pip-audit + Trivy |
 | Monitoring | Prometheus + Grafana + Alertmanager |
+| Cloud Deployment | Azure Container Apps + Azure Container Registry |
 
 ---
 
