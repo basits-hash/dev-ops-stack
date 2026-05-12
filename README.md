@@ -70,7 +70,19 @@ Test → Security → Build
 
 ---
 
-## Quick Start
+## Live Deployment
+
+Backend deployed to **Azure Container Apps** (westus2):
+
+| Endpoint | URL |
+|---|---|
+| API Docs (Swagger) | https://task-manager-api.victoriousgrass-3dbb5698.westus2.azurecontainerapps.io/docs |
+| Health Check | https://task-manager-api.victoriousgrass-3dbb5698.westus2.azurecontainerapps.io/health |
+| Metrics | https://task-manager-api.victoriousgrass-3dbb5698.westus2.azurecontainerapps.io/metrics |
+
+---
+
+## Quick Start (Local)
 
 ```bash
 cp .env.example .env        # fill in MONGO_PASSWORD
