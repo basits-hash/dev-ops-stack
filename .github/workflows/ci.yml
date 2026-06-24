@@ -133,7 +133,7 @@ jobs:
           failure-threshold: warning
 
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -186,7 +186,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Trivy image scan (backend)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: task-manager-backend:${{ github.sha }}
           format: sarif
@@ -195,7 +195,7 @@ jobs:
         continue-on-error: true
 
       - name: Trivy image scan (frontend)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: task-manager-frontend:${{ github.sha }}
           format: sarif
