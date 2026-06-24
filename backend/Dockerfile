@@ -2,7 +2,7 @@
 # Multi-stage build for the Python FastAPI backend.
 # Base image pinned to an explicit patch version for reproducible builds.
 # Hardening roadmap: pin by sha256 digest once CI publishes a verified digest.
-FROM python:3.12.8-slim AS builder
+FROM python:3.14.6-slim AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 
 # --- Production stage: minimal, non-root, read-only friendly ---
-FROM python:3.12.8-slim
+FROM python:3.14.6-slim
 
 LABEL org.opencontainers.image.title="task-manager-backend" \
       org.opencontainers.image.description="FastAPI backend for the DevOps Task Manager" \
