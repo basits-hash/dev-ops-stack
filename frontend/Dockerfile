@@ -20,7 +20,7 @@ RUN npm run build
 # --- Production stage: unprivileged nginx ---
 # nginxinc/nginx-unprivileged runs as a non-root user (uid 101) and listens
 # on an unprivileged port by default — no setuid binaries needed at runtime.
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 
 LABEL org.opencontainers.image.title="task-manager-frontend" \
       org.opencontainers.image.description="React frontend for the DevOps Task Manager" \
