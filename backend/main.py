@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from urllib.parse import urlparse, urlunparse
 
 from bson import ObjectId
 from fastapi import FastAPI, HTTPException, Request
@@ -57,12 +58,23 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_lim
 db_client: AsyncIOMotorClient | None = None
 
 
+def _redact_uri(uri: str) -> str:
+    """Strip any embedded credentials from a connection URI before logging."""
+    try:
+        parsed = urlparse(uri)
+        host = parsed.hostname or ""
+        netloc = f"{host}:{parsed.port}" if parsed.port else host
+        return urlunparse(parsed._replace(netloc=netloc))
+    except Exception:
+        return "<redacted>"
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Open and close the MongoDB connection alongside the app lifecycle."""
     global db_client
     db_client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
-    logger.info("MongoDB client initialized")
+    logger.info("MongoDB client initialized: %s", _redact_uri(settings.mongodb_uri))
     try:
         yield
     finally:
@@ -113,7 +125,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
-    """Reject oversized request bodies before they are read into memory."""
+    """Reject oversized request bodies before they are read into memory.
+
+    Guards both the declared Content-Length and the actual streamed byte count,
+    so chunked Transfer-Encoding uploads cannot bypass the cap.
+    """
 
     def __init__(self, app, max_bytes: int) -> None:
         super().__init__(app)
@@ -123,16 +139,31 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
         content_length = request.headers.get("content-length")
         if content_length is not None:
             try:
-                if int(content_length) > self.max_bytes:
-                    return JSONResponse(
-                        status_code=413,
-                        content={"detail": "Request body too large"},
-                    )
+                declared = int(content_length)
             except ValueError:
                 return JSONResponse(
                     status_code=400,
                     content={"detail": "Invalid Content-Length header"},
                 )
+            if declared > self.max_bytes:
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": "Request body too large"},
+                )
+
+        # Drain the stream ourselves so a missing/forged Content-Length (e.g.
+        # chunked uploads) can't slip an unbounded body past the check.
+        body = b""
+        async for chunk in request.stream():
+            body += chunk
+            if len(body) > self.max_bytes:
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": "Request body too large"},
+                )
+
+        # Re-expose the buffered body to downstream handlers.
+        request._body = body
         return await call_next(request)
 
 

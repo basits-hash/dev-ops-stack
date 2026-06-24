@@ -75,9 +75,9 @@ services:
     restart: unless-stopped
     <<: *hardening
     logging: *default-logging
-    # Host 3000 -> container 8080 (nginx-unprivileged).
+    # Host 3000 -> container 8080 (nginx-unprivileged), bound to loopback.
     ports:
-      - "3000:8080"
+      - "127.0.0.1:3000:8080"
     depends_on:
       - backend
     networks:
@@ -102,7 +102,6 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.enable-lifecycle'
     ports:
       - "127.0.0.1:9090:9090"
     networks:

@@ -7,9 +7,10 @@ FROM node:20.18.1-alpine AS build
 
 WORKDIR /app
 
-# Install with the committed lockfile for reproducible, audited builds.
+# Install with the committed lockfile for reproducible builds; fail the build
+# on high/critical production CVEs.
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --no-fund && npm audit --omit=dev --audit-level=high
 
 # Build the production bundle.
 COPY . .

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import pytest
 from bson import ObjectId
 
-from main import doc_to_task
+from main import _redact_uri, doc_to_task
 
 
 # --- Helper unit tests ---
@@ -166,3 +166,33 @@ async def test_oversized_request_rejected(client):
     resp = await client.post("/api/tasks", json={"title": huge_title})
     assert resp.status_code == 413
     assert resp.json()["detail"] == "Request body too large"
+
+
+@pytest.mark.asyncio
+async def test_oversized_chunked_request_rejected(client):
+    """A streamed body with no Content-Length must still be capped."""
+
+    async def big_stream():
+        # Two 10 KiB chunks => 20 KiB total, no Content-Length declared.
+        for _ in range(2):
+            yield b"x" * 10000
+
+    resp = await client.post(
+        "/api/tasks",
+        content=big_stream(),
+        headers={"Content-Type": "application/json"},
+    )
+    assert resp.status_code == 413
+
+
+def test_redact_uri_strips_credentials():
+    redacted = _redact_uri("mongodb://admin:s3cret@db:27017/taskmanager")
+    assert "s3cret" not in redacted
+    assert "admin" not in redacted
+    assert "db:27017" in redacted
+
+
+def test_redact_uri_handles_no_credentials():
+    assert _redact_uri("mongodb://localhost:27017/taskmanager").startswith(
+        "mongodb://localhost:27017"
+    )
