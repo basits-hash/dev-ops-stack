@@ -1,17 +1,32 @@
-version: '3.8'
+# DevOps Task Manager — full local stack.
+# All secrets are injected from the environment (.env); none are committed.
+# Run: cp .env.example .env && docker compose up --build
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-security: &hardening
+  security_opt:
+    - no-new-privileges:true
 
 services:
-  # MongoDB Database
+  # --- MongoDB ---
   mongodb:
     image: mongo:7.0
     container_name: task-manager-db
-    restart: always
+    restart: unless-stopped
+    <<: *hardening
+    logging: *default-logging
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?MONGO_PASSWORD is required}
       MONGO_INITDB_DATABASE: taskmanager
+    # Bound to loopback only — not exposed on all host interfaces.
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -22,19 +37,23 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API (Python FastAPI)
+  # --- Backend API (FastAPI) ---
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: task-manager-backend:local
     container_name: task-manager-api
-    restart: always
+    restart: unless-stopped
+    <<: *hardening
+    logging: *default-logging
     environment:
       PORT: 8000
       MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD}@mongodb:27017/taskmanager?authSource=admin
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      RATE_LIMIT: ${RATE_LIMIT:-100/minute}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -46,71 +65,114 @@ services:
       timeout: 10s
       retries: 3
 
-  # Frontend
+  # --- Frontend (React + nginx, unprivileged) ---
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: task-manager-frontend:local
     container_name: task-manager-frontend
-    restart: always
+    restart: unless-stopped
+    <<: *hardening
+    logging: *default-logging
+    # Host 3000 -> container 8080 (nginx-unprivileged).
     ports:
-      - "3000:80"
+      - "3000:8080"
     depends_on:
       - backend
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Prometheus for monitoring
+  # --- Prometheus ---
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.55.1
     container_name: prometheus
-    restart: always
+    restart: unless-stopped
+    <<: *hardening
+    logging: *default-logging
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     networks:
       - app-network
 
-  # Alertmanager for alert routing
+  # --- Alertmanager ---
   alertmanager:
-    image: prom/alertmanager:latest
+    image: prom/alertmanager:v0.27.0
     container_name: alertmanager
-    restart: always
+    restart: unless-stopped
+    <<: *hardening
+    logging: *default-logging
     volumes:
-      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
     ports:
-      - "9093:9093"
+      - "127.0.0.1:9093:9093"
     networks:
       - app-network
 
-  # Grafana for dashboards
+  # --- node-exporter (host metrics) ---
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: node-exporter
+    restart: unless-stopped
+    <<: *hardening
+    logging: *default-logging
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - app-network
+
+  # --- mongodb-exporter (database metrics) ---
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.43.1
+    container_name: mongodb-exporter
+    restart: unless-stopped
+    <<: *hardening
+    logging: *default-logging
+    command:
+      - '--mongodb.uri=mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD}@mongodb:27017/admin'
+      - '--collect-all'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # --- Grafana ---
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.4.0
     container_name: grafana
-    restart: always
+    restart: unless-stopped
+    <<: *hardening
+    logging: *default-logging
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required}
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
     ports:
-      - "3002:3000"
+      - "127.0.0.1:3002:3000"
     depends_on:
       - prometheus
     networks:
