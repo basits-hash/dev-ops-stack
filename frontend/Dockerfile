@@ -3,7 +3,7 @@
 # Base images pinned to explicit patch versions for reproducible builds.
 
 # --- Build stage ---
-FROM node:20.18.1-alpine AS build
+FROM node:26.3.1-alpine AS build
 
 WORKDIR /app
 
